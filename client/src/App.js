@@ -16,8 +16,8 @@ function App() {
   return (
     <BrowserRouter>
       <Switch>
-        <Route exact path="/" component={Home} />
-        <Route exact path="/createroom" component={CreateRoom} />
+        {/* <Route exact path="/" component={Home} /> */}
+        <Route exact path="/" component={CreateRoom} />
         <Route exact path="/r/:roomname" component={Room} />
         <Route component={NoMatchPage} />
       </Switch>

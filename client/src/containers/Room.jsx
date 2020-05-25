@@ -1,9 +1,30 @@
 import React, { Fragment, useEffect, useState, useRef } from "react";
-import { Button, Alert, Modal, ModalBody, ModalFooter } from "reactstrap";
+import {
+  Button,
+  Alert,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  Form,
+  Input,
+  FormGroup,
+} from "reactstrap";
 import Peer from "simple-peer";
 import io from "socket.io-client";
 import Clipboard from "react-clipboard.js";
 const socket = io(process.env.REACT_APP_WS_URL);
+
+var mqtt = require("mqtt");
+var mqttClient = mqtt.connect("ws://test.mosquitto.org:8080");
+
+mqttClient.on("connect", function () {
+  console.log("Connected to mosquitto");
+});
+
+mqttClient.on("message", function (topic, message) {
+  // message is Buffer
+  console.log(message.toString(), " in topic: ", topic.toString());
+});
 
 function Room(props) {
   let client = {},
@@ -22,26 +43,30 @@ function Room(props) {
   const hidden = gotStream ? "hidden" : "";
   const classNames = `v-container ${hidden} `;
 
-  const getRoomStatus = async () => {
-    try {
-      const response = await fetch("/room", {
-        method: "POST",
-        body: JSON.stringify({ roomName: roomName }),
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
-      const json = await response.json();
-      if (json.data.msg === "room_exists") {
-        setRoomExists(true);
-        getMedia();
-      } else if (json.data.msg === "room_does_not_exist") {
-        setRoomExists(false);
-        setModalVisible(true);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
+  const getRoomStatus = () => {
+    let roomName = localStorage.getItem("roomName");
+    mqttClient.subscribe(roomName, function (err) {
+      console.log("Subscribed to:", roomName);
+    });
+    // try {
+    //   const response = await fetch("/room", {
+    //     method: "POST",
+    //     body: JSON.stringify({ roomName: roomName }),
+    //     headers: {
+    //       "Content-Type": "application/json"
+    //     }
+    //   });
+    //   const json = await response.json();
+    //   if (json.data.msg === "room_exists") {
+    //     setRoomExists(true);
+    //     getMedia();
+    //   } else if (json.data.msg === "room_does_not_exist") {
+    //     setRoomExists(false);
+    //     setModalVisible(true);
+    //   }
+    // } catch (error) {
+    //   console.error("Error:", error);
+    // }
   };
 
   useEffect(() => {
@@ -68,9 +93,9 @@ function Room(props) {
     navigator.mediaDevices
       .getUserMedia({
         video: true,
-        audio: true
+        audio: true,
       })
-      .then(stream => {
+      .then((stream) => {
         //set media stream
         localStream = stream;
         hostStream.current.srcObject = stream;
@@ -78,13 +103,13 @@ function Room(props) {
         socket.emit("subscribe", roomName);
 
         //peer constructor
-        const initPeer = type => {
+        const initPeer = (type) => {
           let peer = new Peer({
             initiator: type === "init" ? true : false,
             stream: localStream,
-            trickle: false
+            trickle: false,
           });
-          peer.on("stream", stream => {
+          peer.on("stream", (stream) => {
             setGotStream(true);
             remoteStream.current.srcObject = stream;
           });
@@ -95,7 +120,7 @@ function Room(props) {
         const createHost = () => {
           client.gotAnswer = false;
           let peer = initPeer("init");
-          peer.on("signal", data => {
+          peer.on("signal", (data) => {
             if (!client.gotAnswer) {
               socket.emit("offer", roomName, data);
             }
@@ -104,9 +129,10 @@ function Room(props) {
         };
 
         //create remote
-        const createRemote = offer => {
+        const createRemote = (offer) => {
           let peer = initPeer("notinit");
-          peer.on("signal", data => {
+          peer.on("signal", (data) => {
+            console.log("Create remote: " + data);
             socket.emit("answer", roomName, data);
           });
           peer.signal(offer);
@@ -114,7 +140,7 @@ function Room(props) {
         };
 
         //handle answer
-        const handleAnswer = answer => {
+        const handleAnswer = (answer) => {
           client.gotAnswer = true;
           let peer = client.peer;
           peer.signal(answer);
@@ -125,17 +151,17 @@ function Room(props) {
         };
 
         //socket events
-        socket.on("create_host", createHost);
-        socket.on("new_offer", createRemote);
-        socket.on("new_answer", handleAnswer);
-        socket.on("end", end);
-        socket.on("session_active", session_active);
+        // socket.on("create_host", createHost);
+        // socket.on("new_offer", createRemote);
+        // socket.on("new_answer", handleAnswer);
+        // socket.on("end", end);
+        // socket.on("session_active", session_active);
       })
-      .catch(error => {
+      .catch((error) => {
         //error alerts
         setErrors({
           msg:
-            "App needs permissions to access media devices to work! Try again."
+            "App needs permissions to access media devices to work! Try again.",
         });
         setVisible(true);
         console.log(error);
@@ -167,25 +193,6 @@ function Room(props) {
     }
   };
 
-  //web share
-  const share = () => {
-    if (navigator.share) {
-      navigator
-        .share({
-          title: "TensorChat",
-          text: "Share this session URL with friends",
-          url: window.location.href
-        })
-        .then(() => {
-          showCheck();
-        })
-        .catch(console.error);
-    } else {
-      setModalVisible(true);
-      showCheck();
-    }
-  };
-
   const showCheck = () => {
     webShare.current.className = "fas fa-clipboard-check";
     setTimeout(() => {
@@ -205,15 +212,14 @@ function Room(props) {
       </div>
       <Modal isOpen={modalVisible} toggle={handleModalClose}>
         <div className="modal-header">
-          <h5 className="modal-title">TensorChat</h5>
+          <h5 className="modal-title">Liv3</h5>
         </div>
         <ModalBody>
-          <p>Share the session URL to invite friends.</p>
           <input
             autoFocus
             type="text"
             name="roomUrl"
-            onChange={e => setRoomUrl(e.target.value)}
+            onChange={(e) => setRoomUrl(e.target.value)}
             className="form-control"
             value={roomUrl}
             style={{ color: "black" }}
@@ -241,32 +247,30 @@ function Room(props) {
       </Alert>
 
       <div role="group" id="actionbar">
-        <Button
-          onClick={share}
-          color="info"
-          className="btn-round btn-icon actionbar-icon"
-        >
-          <i className="fas fa-share-alt" ref={webShare}></i>
-        </Button>
-        <Button
-          onClick={disableVideo}
-          color="info"
-          className="btn-round btn-icon actionbar-icon"
-        >
+        <Form>
+          <FormGroup>
+            <Input
+            type="text"
+            name="partnerId"
+            id="partnerId"
+            minLength="3"
+            placeholder="Enter partner id"
+            ></Input>
+            <Button>Call</Button>
+            <Button>Answer</Button>
+          </FormGroup>
+        </Form>
+        <Button onClick={disableVideo}>
+          Disable Video
           <i className="fas fa-video-slash"></i>
         </Button>
-        <Button
-          onClick={disableAudio}
-          color="info"
-          className="btn-round btn-icon actionbar-icon"
-        >
+        <Button onClick={disableAudio}>
+          Diable audio
           <i className="fas fa-microphone-slash"></i>
         </Button>
-        <Button
-          onClick={hangup}
-          className="btn-round btn-icon actionbar-icon"
-          color="danger"
-        >
+        <Button onClick={hangup} color="danger">
+          {" "}
+          Hangup
           <i className="fas fa-phone-slash"></i>
         </Button>
       </div>
@@ -280,22 +284,12 @@ function Room(props) {
           ref={remoteStream}
         ></video>
       </div>
-
-      <div className={classNames}>
-        <h1> Share this session URL to invite friends!</h1>
-      </div>
     </Fragment>
   ) : (
     <Modal isOpen={modalVisible} toggle={handleModalClose} size="sm">
       <div className="modal-header">
-        <h5 className="modal-title">TensorChat</h5>
+        <h5 className="modal-title">Liv3</h5>
       </div>
-      <ModalBody>
-        <p>
-          <span style={{ fontWeight: "bold" }}>"{roomName}"</span> does not
-          exist,<a href="/#howitworks"> need help?</a>
-        </p>
-      </ModalBody>
       <ModalFooter>
         <Button
           color="secondary"

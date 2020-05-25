@@ -36,8 +36,7 @@ function IndexNavbar() {
       <Container>
         <div className="navbar-translate">
           <NavbarBrand data-placement="bottom" to="/" tag={Link}>
-            <span>Tensor </span>
-            Chat
+            <span>Liv3 </span>
           </NavbarBrand>
           <button
             aria-expanded={collapseOpen}
@@ -96,18 +95,7 @@ function IndexNavbar() {
                 </NavLink>
               )}
             </NavItem>
-            <NavItem className="p-0">
-              <NavLink
-                data-placement="bottom"
-                href="https://github.com/ehsaaniqbal/tensorchat"
-                rel="noopener noreferrer"
-                target="_blank"
-                title="Github"
-              >
-                <i className="fab fa-github" />
-                <p className="d-lg-none d-xl-none">Github</p>
-              </NavLink>
-            </NavItem>
+          
           </Nav>
         </Collapse>
       </Container>

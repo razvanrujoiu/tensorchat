@@ -1,7 +1,7 @@
 import React, { Fragment } from "react";
 import Header from "../components/Header";
 import IndexNavbar from "../components/IndexNavbar";
-import HowItWorks from "../components/HowItWorks";
+import CreateRoom from "../containers/CreateRoom"
 
 function Home() {
   return (
@@ -9,7 +9,6 @@ function Home() {
       <IndexNavbar />
       <div className="wrapper">
         <Header />
-        <HowItWorks />
       </div>
     </Fragment>
   );

@@ -15,6 +15,18 @@ import {
 
 import IndexNavbar from "../components/IndexNavbar";
 
+var mqtt = require('mqtt')
+var client  = mqtt.connect('ws://test.mosquitto.org:8080')
+
+client.on('connect', function() {
+  console.log("Connected to mosquitto");
+});
+
+client.on('message', function (topic, message) {
+  // message is Buffer
+  console.log(message.toString(), " in topic: ", topic.toString())
+});
+
 function CreateRoom(props) {
   const [inputs, setInputs] = useState({});
   const [visible, setVisible] = useState(false);
@@ -40,21 +52,29 @@ function CreateRoom(props) {
   const handleClose = () => {
     setVisible(false);
   };
-  const sendData = async data => {
+  const sendData = data => {
     try {
-      const response = await fetch("/createroom", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
-      const json = await response.json();
-      if (json.data.msg === "created") {
-        props.history.push(`/r/${json.data.roomName}`);
-      } else if (json.data.msg === "duplicate") {
-        setVisible(true);
-      }
+        client.subscribe(data.roomName, function (err) {
+          if (!err) {
+            localStorage.setItem('roomName', data.roomName);
+            console.log("Subscribed succesfully")
+            props.history.push(`/r/${data.roomName}`);
+            
+          }
+        });
+      // const response = await fetch("/createroom", {
+      //   method: "POST",
+      //   body: JSON.stringify(data),
+      //   headers: {
+      //     "Content-Type": "application/json"
+      //   }
+      // });
+      // const json = await response.json();
+      // if (json.data.msg === "created") {
+      //   props.history.push(`/r/${json.data.roomName}`);
+      // } else if (json.data.msg === "duplicate") {
+      //   setVisible(true);
+      // }
     } catch (error) {
       console.error("Error:", error);
     }
@@ -85,14 +105,11 @@ function CreateRoom(props) {
                       name="room"
                       id="room"
                       value={inputs.room}
-                      placeholder="e.g. erlich bachman"
+                      placeholder="e.g. room1"
                       required
                       onChange={handleInputChange}
                       minLength="3"
                     />
-                    <FormText color="muted">
-                      <a href="/#howitworks">Need help?</a>
-                    </FormText>
                   </FormGroup>
                   <Button type="submit">Go</Button>
                 </Form>

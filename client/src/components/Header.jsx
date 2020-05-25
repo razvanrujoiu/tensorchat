@@ -14,15 +14,9 @@ function Header() {
         <div className="content-center ">
           <Jumbotron style={{ backgroundColor: "transparent" }}>
             <h1 className="display-3">
-              <span style={{ fontWeight: "bold" }}>Tensor</span>Chat
+              <span style={{ fontWeight: "bold" }}>Liv3</span>
             </h1>
-            <h4>
-              An{" "}
-              <span style={{ fontStyle: "italic", fontWeight: "bold" }}>
-                Open-source, peer-to-peer{" "}
-              </span>
-              chat application that connects you with loved ones securely.
-            </h4>
+           
             <Link to="/createroom">
               <Button>Get started</Button>
             </Link>
